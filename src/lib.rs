@@ -78,7 +78,7 @@ where
     root: &'a Root<I, P>,
     root_index: usize,
     stack: Vec<(usize, &'a Node<I, P>)>,
-    ids: Vec<&'a I>,
+    ids: Vec<I>,
 }
 
 impl<'a, I, P> Iter<'a, I, P> {
@@ -97,7 +97,7 @@ where
     I: 'a,
     P: 'a,
 {
-    type Item = (&'a [&'a I], &'a P);
+    type Item = (&'a [I], &'a P);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.root_index < self.root.nodes.len() {
@@ -105,16 +105,17 @@ where
                 self.stack.push((0, &self.root.nodes[self.root_index]));
             }
             let &mut (current_index, current_node) = self.stack.last_mut().unwrap();
-            if current_index < current_node.nodes.len() {
-                self.ids.push(&current_node.id);
-                return Some((&self.ids, &current_node.payload));
+            let result = if current_index < current_node.nodes.len() {
+                self.ids.push(current_node.id);
+                Some((&*self.ids, &current_node.payload))
             } else {
                 self.stack.pop();
                 if self.stack.is_empty() {
                     self.root_index += 1;
                 }
-            }
-            None
+                None
+            };
+            result
         } else {
             None
         }
