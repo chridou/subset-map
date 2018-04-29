@@ -9,25 +9,25 @@ impl<E, P> SubsetMap<E, P>
 where
     E: Clone,
 {
-    pub fn new<F>(elements: &[E], init: F) -> SubsetMap<E, P>
+    pub fn new<F>(elements: &[E], mut init: F) -> SubsetMap<E, P>
     where
-        F: Fn(&[E]) -> P,
+        F: FnMut(&[E]) -> P,
     {
-        init_root(elements, &init)
+        init_root(elements, &mut init)
     }
 
-    pub fn with_value<F>(elements: &[E], init: F) -> SubsetMap<E, P>
+    pub fn with_value<F>(elements: &[E], mut init: F) -> SubsetMap<E, P>
     where
-        F: Fn() -> P,
+        F: FnMut() -> P,
     {
-        init_root(elements, &|_| init())
+        init_root(elements, &mut |_| init())
     }
 
     pub fn with_defaults(elements: &[E]) -> SubsetMap<E, P>
     where
         P: Default,
     {
-        init_root(elements, &|_| P::default())
+        init_root(elements, &mut |_| P::default())
     }
 
     pub fn is_empty(&self) -> bool {
@@ -93,7 +93,6 @@ fn find<'a, 'b, E, P>(
 ) -> Option<&'a P>
 where
     E: Eq,
-    P: ,
 {
     if subset.is_empty() {
         Some(&node.payload)
@@ -122,10 +121,10 @@ where
     None
 }
 
-fn init_root<E, P, F>(elements: &[E], init_with: &F) -> SubsetMap<E, P>
+fn init_root<E, P, F>(elements: &[E], init_with: &mut F) -> SubsetMap<E, P>
 where
     E: Clone,
-    F: Fn(&[E]) -> P,
+    F: FnMut(&[E]) -> P,
 {
     let mut stack = Vec::new();
     let nodes: Nodes<_, _> = (0..elements.len())
@@ -151,10 +150,10 @@ fn init_node<E, P, F>(
     stack: &mut Vec<E>,
     fixed: usize,
     into: &mut SubsetMapNode<E, P>,
-    init_with: &F,
+    init_with: &mut F,
 ) where
     E: Clone,
-    F: Fn(&[E]) -> P,
+    F: FnMut(&[E]) -> P,
 {
     for fixed in fixed + 1..elements.len() {
         stack.push(elements[fixed].clone());
