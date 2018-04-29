@@ -122,21 +122,21 @@ where
     None
 }
 
-fn init_root<E, P, F>(ids: &[E], init_with: &F) -> SubsetMap<E, P>
+fn init_root<E, P, F>(elements: &[E], init_with: &F) -> SubsetMap<E, P>
 where
     E: Clone,
     F: Fn(&[E]) -> P,
 {
-    let nodes: Nodes<_, _> = (0..ids.len())
+    let nodes: Nodes<_, _> = (0..elements.len())
         .map(|fixed| {
-            let element = ids[fixed].clone();
-            let payload = init_with(&ids[fixed..fixed + 1]);
+            let element = elements[fixed].clone();
+            let payload = init_with(&elements[fixed..fixed + 1]);
             let mut node = SubsetMapNode {
                 element,
                 payload,
                 nodes: Vec::new(),
             };
-            init_node(ids, fixed, fixed, &mut node, init_with);
+            init_node(elements, fixed, fixed, &mut node, init_with);
             node
         })
         .collect();
