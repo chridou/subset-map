@@ -127,6 +127,7 @@ where
     E: Clone,
     F: Fn(&[E]) -> P,
 {
+    let mut stack = Vec::new();
     let nodes: Nodes<_, _> = (0..elements.len())
         .map(|fixed| {
             let element = elements[fixed].clone();
@@ -136,7 +137,9 @@ where
                 payload,
                 nodes: Vec::new(),
             };
-            init_node(elements, fixed, fixed, &mut node, init_with);
+            stack.clear();
+            stack.push(elements[fixed].clone());
+            init_node(elements, &mut stack, fixed, &mut node, init_with);
             node
         })
         .collect();
@@ -145,7 +148,7 @@ where
 
 fn init_node<E, P, F>(
     elements: &[E],
-    initial: usize,
+    stack: &mut Vec<E>,
     fixed: usize,
     into: &mut SubsetMapNode<E, P>,
     init_with: &F,
@@ -154,12 +157,14 @@ fn init_node<E, P, F>(
     F: Fn(&[E]) -> P,
 {
     for fixed in fixed + 1..elements.len() {
+        stack.push(elements[fixed].clone());
         let mut node = SubsetMapNode {
             element: elements[fixed].clone(),
-            payload: init_with(&elements[initial..fixed + 1]),
+            payload: init_with(&stack),
             nodes: Vec::new(),
         };
-        init_node(elements, initial, fixed, &mut node, init_with);
+        init_node(elements, stack, fixed, &mut node, init_with);
+        stack.pop();
         into.nodes.push(node);
     }
 }
