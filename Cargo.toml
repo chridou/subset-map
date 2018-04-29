@@ -1,5 +1,5 @@
 [package]
-name = "subset-tree"
+name = "subset-map"
 version = "0.1.0"
 authors = ["chridou <chridou@users.noreply.github.com>"]
 
