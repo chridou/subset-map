@@ -1,42 +1,42 @@
 type Nodes<I, P> = Vec<SubsetMapNode<I, P>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubsetMap<I, P> {
-    nodes: Nodes<I, P>,
+pub struct SubsetMap<E, P> {
+    nodes: Nodes<E, P>,
 }
 
-impl<I, P> SubsetMap<I, P>
+impl<E, P> SubsetMap<E, P>
 where
-    I: Clone,
+    E: Clone,
 {
-    pub fn new<F>(ids: &[I], init: F) -> SubsetMap<I, P>
+    pub fn new<F>(elements: &[E], init: F) -> SubsetMap<E, P>
     where
-        F: Fn(&[I]) -> P,
+        F: Fn(&[E]) -> P,
     {
-        init_root(ids, &init)
+        init_root(elements, &init)
     }
 
-    pub fn with_value<F>(ids: &[I], init: F) -> SubsetMap<I, P>
+    pub fn with_value<F>(elements: &[E], init: F) -> SubsetMap<E, P>
     where
         F: Fn() -> P,
     {
-        init_root(ids, &|_| init())
+        init_root(elements, &|_| init())
     }
 
-    pub fn with_defaults(ids: &[I]) -> SubsetMap<I, P>
+    pub fn with_defaults(elements: &[E]) -> SubsetMap<E, P>
     where
         P: Default,
     {
-        init_root(ids, &|_| P::default())
+        init_root(elements, &|_| P::default())
     }
 
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
 
-    pub fn lookup<'a>(&'a self, subset: &'a [I]) -> Option<&'a P>
+    pub fn lookup<'a>(&'a self, subset: &'a [E]) -> Option<&'a P>
     where
-        I: Eq,
+        E: Eq,
     {
         match self.find(subset) {
             Some(MatchQuality::Perfect(p)) => Some(p),
@@ -44,17 +44,15 @@ where
         }
     }
 
-    pub fn find<'a>(&'a self, subset: &'a [I]) -> Option<MatchQuality<'a, 'a, I, P>>
+    pub fn find<'a>(&'a self, subset: &'a [E]) -> Option<MatchQuality<'a, 'a, E, P>>
     where
-        I: Eq,
+        E: Eq,
     {
         if subset.is_empty() {
             None
         } else {
             let mut skipped = Vec::with_capacity(subset.len());
-            if let Some(found) = find_next_node(subset, &self.nodes, &mut skipped)
-                .and_then(|next_node| find(subset, next_node, &mut skipped))
-            {
+            if let Some(found) = find_in_next_node(subset, &self.nodes, &mut skipped) {
                 if skipped.is_empty() {
                     Some(MatchQuality::Perfect(found))
                 } else {
@@ -68,18 +66,18 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct SubsetMapNode<I, P> {
-    pub id: I,
+struct SubsetMapNode<E, P> {
+    pub element: E,
     pub payload: P,
-    pub nodes: Nodes<I, P>,
+    pub nodes: Nodes<E, P>,
 }
 
-pub enum MatchQuality<'a, 'b, I: 'a, P: 'b> {
+pub enum MatchQuality<'a, 'b, E: 'a, P: 'b> {
     Perfect(&'b P),
-    Nearby(&'b P, Vec<&'a I>),
+    Nearby(&'b P, Vec<&'a E>),
 }
 
-impl<'a, 'b, I, P> MatchQuality<'a, 'b, I, P> {
+impl<'a, 'b, E, P> MatchQuality<'a, 'b, E, P> {
     pub fn value(&self) -> &P {
         match *self {
             MatchQuality::Perfect(p) => p,
@@ -88,42 +86,53 @@ impl<'a, 'b, I, P> MatchQuality<'a, 'b, I, P> {
     }
 }
 
-fn find<'a, 'b, I, P>(
-    subset: &'b [I],
-    node: &'a SubsetMapNode<I, P>,
-    skipped: &mut Vec<&'b I>,
+fn find<'a, 'b, E, P>(
+    subset: &'b [E],
+    node: &'a SubsetMapNode<E, P>,
+    skipped: &mut Vec<&'b E>,
 ) -> Option<&'a P>
 where
-    I: Eq,
+    E: Eq,
     P: ,
 {
     if subset.is_empty() {
         Some(&node.payload)
     } else {
-        find_next_node(subset, &node.nodes, skipped)
-            .and_then(|next_node| find(subset, next_node, skipped))
+        find_in_next_node(subset, &node.nodes, skipped)
     }
 }
 
-fn find_next_node<'a, 'b, I, P>(
-    subset: &'b [I],
-    nodes: &'a [SubsetMapNode<I, P>],
-    skipped: &mut Vec<&'b I>,
-) -> Option<&'a SubsetMapNode<I, P>> {
-    unimplemented!()
+fn find_in_next_node<'a, 'b, E, P>(
+    subset: &'b [E],
+    nodes: &'a [SubsetMapNode<E, P>],
+    skipped: &mut Vec<&'b E>,
+) -> Option<&'a P>
+where
+    E: Eq,
+{
+    let mut idx = 1;
+    for element in subset {
+        if let Some(node) = nodes.iter().find(|n| n.element == *element) {
+            return find(&subset[idx..], node, skipped);
+        }
+        idx += 1;
+        skipped.push(element);
+    }
+
+    None
 }
 
-fn init_root<I, P, F>(ids: &[I], init_with: &F) -> SubsetMap<I, P>
+fn init_root<E, P, F>(ids: &[E], init_with: &F) -> SubsetMap<E, P>
 where
-    I: Clone,
-    F: Fn(&[I]) -> P,
+    E: Clone,
+    F: Fn(&[E]) -> P,
 {
     let nodes: Nodes<_, _> = (0..ids.len())
         .map(|fixed| {
-            let id = ids[fixed].clone();
+            let element = ids[fixed].clone();
             let payload = init_with(&ids[fixed..fixed + 1]);
             let mut node = SubsetMapNode {
-                id,
+                element,
                 payload,
                 nodes: Vec::new(),
             };
@@ -134,28 +143,28 @@ where
     SubsetMap { nodes }
 }
 
-fn init_node<I, P, F>(
-    ids: &[I],
+fn init_node<E, P, F>(
+    elements: &[E],
     initial: usize,
     fixed: usize,
-    into: &mut SubsetMapNode<I, P>,
+    into: &mut SubsetMapNode<E, P>,
     init_with: &F,
 ) where
-    I: Clone,
-    F: Fn(&[I]) -> P,
+    E: Clone,
+    F: Fn(&[E]) -> P,
 {
-    for fixed in fixed + 1..ids.len() {
+    for fixed in fixed + 1..elements.len() {
         let mut node = SubsetMapNode {
-            id: ids[fixed].clone(),
-            payload: init_with(&ids[initial..fixed]),
+            element: elements[fixed].clone(),
+            payload: init_with(&elements[initial..fixed + 1]),
             nodes: Vec::new(),
         };
-        init_node(ids, initial, fixed, &mut node, init_with);
+        init_node(elements, initial, fixed, &mut node, init_with);
         into.nodes.push(node);
     }
 }
 
-impl<I, P> Default for SubsetMap<I, P> {
+impl<E, P> Default for SubsetMap<E, P> {
     fn default() -> Self {
         SubsetMap {
             nodes: Default::default(),
@@ -174,10 +183,55 @@ mod tests {
     }
 
     #[test]
-    fn bogus() {
-        let sample = SubsetMap::<_, ()>::with_defaults(&[]);
-        let expected = SubsetMap::with_defaults(&[1, 2, 3]);
+    fn one_element() {
+        let sample = SubsetMap::new(&[1], |_| 1);
 
-        assert_eq!(sample, expected);
+        assert_eq!(sample.lookup(&[1]), Some(&1));
+        assert_eq!(sample.lookup(&[]), None);
+        assert_eq!(sample.lookup(&[2]), None);
     }
+
+    #[test]
+    fn two_elements() {
+        let sample = SubsetMap::new(&[1, 2], |x| x.iter().sum::<i32>());
+
+        assert_eq!(sample.lookup(&[1]), Some(&1));
+        assert_eq!(sample.lookup(&[2]), Some(&2));
+        assert_eq!(sample.lookup(&[1, 2]), Some(&3));
+        assert_eq!(sample.lookup(&[]), None);
+        assert_eq!(sample.lookup(&[2, 1]), None);
+        assert_eq!(sample.lookup(&[0]), None);
+        assert_eq!(sample.lookup(&[0, 1]), None);
+    }
+
+    #[test]
+    fn three_elements() {
+        let sample = SubsetMap::new(&[1, 2, 3], |x| x.iter().sum::<i32>());
+
+        assert_eq!(sample.lookup(&[1]), Some(&1));
+        assert_eq!(sample.lookup(&[2]), Some(&2));
+        assert_eq!(sample.lookup(&[3]), Some(&3));
+        assert_eq!(sample.lookup(&[1, 2]), Some(&3));
+        assert_eq!(sample.lookup(&[2, 3]), Some(&5));
+        assert_eq!(sample.lookup(&[1, 3]), Some(&4));
+        assert_eq!(sample.lookup(&[1, 2, 3]), Some(&6));
+        assert_eq!(sample.lookup(&[]), None);
+        assert_eq!(sample.lookup(&[2, 1]), None);
+        assert_eq!(sample.lookup(&[0]), None);
+        assert_eq!(sample.lookup(&[0, 1]), None);
+    }
+
+    #[test]
+    fn three_elements_identity_vec() {
+        let sample = SubsetMap::new(&[1, 2, 3], |x| x.iter().cloned().collect::<Vec<_>>());
+
+        assert_eq!(sample.lookup(&[1]), Some(&vec![1]));
+        assert_eq!(sample.lookup(&[2]), Some(&vec![2]));
+        assert_eq!(sample.lookup(&[3]), Some(&vec![3]));
+        assert_eq!(sample.lookup(&[1, 2]), Some(&vec![1, 2]));
+        assert_eq!(sample.lookup(&[2, 3]), Some(&vec![2, 3]));
+        assert_eq!(sample.lookup(&[1, 3]), Some(&vec![1, 3]));
+        assert_eq!(sample.lookup(&[1, 2, 3]), Some(&vec![1, 2, 3]));
+    }
+
 }
