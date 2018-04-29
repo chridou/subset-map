@@ -51,8 +51,7 @@ where
         if subset.is_empty() {
             None
         } else {
-            let mut skipped = Vec::with_capacity(subset.len());
-            find(subset, &self.nodes, &mut skipped);
+            unimplemented!()
         }
     }
 }
@@ -127,10 +126,7 @@ fn init_node<I, P, F>(
     }
 }
 
-impl<I, P> Default for SubsetMap<I, P>
-where
-    I: Ord,
-{
+impl<I, P> Default for SubsetMap<I, P> {
     fn default() -> Self {
         SubsetMap {
             nodes: Default::default(),
