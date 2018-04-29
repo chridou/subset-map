@@ -2,7 +2,7 @@ type Nodes<I, P> = Vec<SubsetMapNode<I, P>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubsetMap<I, P> {
-    pub nodes: Nodes<I, P>,
+    nodes: Nodes<I, P>,
 }
 
 impl<I, P> SubsetMap<I, P>
@@ -34,7 +34,7 @@ where
         self.nodes.is_empty()
     }
 
-    pub fn lookup(&self, subset: &[I]) -> Option<&P>
+    pub fn lookup<'a>(&'a self, subset: &'a [I]) -> Option<&'a P>
     where
         I: Eq,
     {
@@ -44,20 +44,31 @@ where
         }
     }
 
-    pub fn find(&self, subset: &[I]) -> Option<MatchQuality<I, P>>
+    pub fn find<'a>(&'a self, subset: &'a [I]) -> Option<MatchQuality<'a, 'a, I, P>>
     where
         I: Eq,
     {
         if subset.is_empty() {
             None
         } else {
-            unimplemented!()
+            let mut skipped = Vec::with_capacity(subset.len());
+            if let Some(found) = find_next_node(subset, &self.nodes, &mut skipped)
+                .and_then(|next_node| find(subset, next_node, &mut skipped))
+            {
+                if skipped.is_empty() {
+                    Some(MatchQuality::Perfect(found))
+                } else {
+                    Some(MatchQuality::Nearby(found, skipped))
+                }
+            } else {
+                None
+            }
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubsetMapNode<I, P> {
+struct SubsetMapNode<I, P> {
     pub id: I,
     pub payload: P,
     pub nodes: Nodes<I, P>,
@@ -77,10 +88,28 @@ impl<'a, 'b, I, P> MatchQuality<'a, 'b, I, P> {
     }
 }
 
-fn find<'a, 'b, I, P>(subset: &[I], nodes: &[SubsetMapNode<I, P>])
+fn find<'a, 'b, I, P>(
+    subset: &'b [I],
+    node: &'a SubsetMapNode<I, P>,
+    skipped: &mut Vec<&'b I>,
+) -> Option<&'a P>
 where
     I: Eq,
+    P: ,
 {
+    if subset.is_empty() {
+        Some(&node.payload)
+    } else {
+        find_next_node(subset, &node.nodes, skipped)
+            .and_then(|next_node| find(subset, next_node, skipped))
+    }
+}
+
+fn find_next_node<'a, 'b, I, P>(
+    subset: &'b [I],
+    nodes: &'a [SubsetMapNode<I, P>],
+    skipped: &mut Vec<&'b I>,
+) -> Option<&'a SubsetMapNode<I, P>> {
     unimplemented!()
 }
 
