@@ -2,5 +2,13 @@
 name = "subset-map"
 version = "0.1.0"
 authors = ["chridou <chridou@users.noreply.github.com>"]
+readme = "README.md"
+license = "Apache-2.0/MIT"
+description = "A map where the keys are subsets of an initial set of elements"
+documentation = "https://docs.rs/subset-map"
+homepage = "https://github.com/chridou/subset-map"
+repository = "https://github.com/chridou/subset-map"
+keywords = ["map", "set", "combinations"]
 
 [dependencies]
+serde = { version="1.0", optional = true, features=["serde_derive"] }
