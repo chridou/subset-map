@@ -39,6 +39,16 @@ assert_eq!(subset_map.lookup(&[2,1]), None);
 
 The `serde` feature allows serialization and deserialization with `serde`.
 
+Recent Changes
+
+* 0.2.1
+    * Optimized `find` and `lookup` a bit
+    * Added `size` finction to return the number of combinations
+* 0.2.0
+    * Renamed MatchQuality to `MatchResult`
+    * `MatchResult` also contains the no match case
+    * improved documentation
+
 ## License
 
 `subset-map` is distributed under the terms of both the MIT license and the Apache License (Version
