@@ -41,6 +41,8 @@ The `serde` feature allows serialization and deserialization with `serde`.
 
 Recent Changes
 
+* 0.2.2
+    * fixed `size` function
 * 0.2.1
     * Optimized `find` and `lookup` a bit
     * Added `size` finction to return the number of combinations

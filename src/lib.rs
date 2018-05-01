@@ -41,6 +41,8 @@
 //!
 //! Recent Changes
 //!
+//! * 0.2.2
+//!     * fixed `size` function
 //! * 0.2.1
 //!     * Optimized `find` and `lookup` a bit
 //!     * Added `size` finction to return the number of combinations
@@ -392,7 +394,7 @@ where
 
     /// The number of subsets in this map
     pub fn size(&self) -> usize {
-        self.nodes.len().pow(2) - 1
+        2usize.pow(self.nodes.len() as u32) - 1
     }
 }
 
