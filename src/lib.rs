@@ -41,6 +41,9 @@
 //!
 //! Recent Changes
 //!
+//! * 0.2.1
+//!     * Optimized `find` and `lookup` a bit
+//!     * Added `size` finction to return the number of combinations
 //! * 0.2.0
 //!     * Renamed MatchQuality to `MatchResult`
 //!     * `MatchResult` also contains the no match case
@@ -250,11 +253,6 @@ where
         init_root::<_, _, _, ()>(elements, &mut |_| Ok(Some(P::default()))).unwrap()
     }
 
-    /// Returns true if the map is empty and contains no combinations/subsets.
-    pub fn is_empty(&self) -> bool {
-        self.nodes.is_empty()
-    }
-
     /// Looks up a payload by the given subset.
     ///
     /// Only "perfect" matches on `subset` are returned.
@@ -293,28 +291,23 @@ where
     where
         E: Eq,
     {
-        match self.find(subset) {
-            MatchResult::Perfect(p) => p,
-            _ => None,
-        }
+        lookup(subset, &self.nodes)
     }
 
-    /// Looks up a payload by the given subset and returns a clone.
+    /// Looks up a payload by the given subset and returns the
+    /// corresponding owned value.
     ///
     /// The function returns `None` regardless of wether
     /// `subset` was part of the map or there was no payload
     /// assigned to the given subset.
     ///
     /// Only perfect matches on `subset` are returned. See `lookup`.
-    pub fn lookup_owned(&self, subset: &[E]) -> Option<P>
+    pub fn lookup_owned(&self, subset: &[E]) -> Option<P::Owned>
     where
         E: Eq,
-        P: Clone,
+        P: ToOwned,
     {
-        match self.find(subset) {
-            MatchResult::Perfect(p) => p.cloned(),
-            _ => None,
-        }
+        lookup(subset, &self.nodes).map(|p| p.to_owned())
     }
 
     /// Finds a payload by the given subset.
@@ -378,20 +371,7 @@ where
     where
         E: Eq,
     {
-        if subset.is_empty() {
-            MatchResult::NoMatch
-        } else {
-            let mut skipped = Vec::with_capacity(subset.len());
-            if let Some(maybe_a_payload) = find_in_next_node(subset, &self.nodes, &mut skipped) {
-                if skipped.is_empty() {
-                    MatchResult::Perfect(maybe_a_payload)
-                } else {
-                    MatchResult::Excluded(maybe_a_payload, skipped)
-                }
-            } else {
-                MatchResult::NoMatch
-            }
-        }
+        find(subset, &self.nodes)
     }
 
     /// Sets the payload of all nodes to `None`
@@ -403,6 +383,24 @@ where
         self.nodes
             .iter_mut()
             .for_each(|n| n.filter_payloads(&mut predicate))
+    }
+
+    /// Returns true if the map is empty and contains no combinations/subsets.
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
+    /// The number of subsets in this map
+    pub fn size(&self) -> usize {
+        self.nodes.len().pow(2) - 1
+    }
+}
+
+impl<E, P> Default for SubsetMap<E, P> {
+    fn default() -> Self {
+        SubsetMap {
+            nodes: Default::default(),
+        }
     }
 }
 
@@ -507,44 +505,6 @@ impl<'a, E, P> MatchResult<'a, E, P> {
     }
 }
 
-fn find<'a, 'b, E, P>(
-    subset: &'b [E],
-    node: &'a SubsetMapNode<E, P>,
-    skipped: &mut Vec<E>,
-) -> Option<Option<&'a P>>
-where
-    E: Eq + Clone,
-{
-    if subset.is_empty() {
-        Some(node.payload.as_ref())
-    } else {
-        match find_in_next_node(subset, &node.nodes, skipped) {
-            None => Some(node.payload.as_ref()),
-            Some(res) => Some(res),
-        }
-    }
-}
-
-fn find_in_next_node<'a, 'b, E, P>(
-    subset: &'b [E],
-    nodes: &'a [SubsetMapNode<E, P>],
-    skipped: &mut Vec<E>,
-) -> Option<Option<&'a P>>
-where
-    E: Eq + Clone,
-{
-    let mut idx = 1;
-    for element in subset {
-        if let Some(node) = nodes.iter().find(|n| n.element == *element) {
-            return find(&subset[idx..], node, skipped);
-        }
-        idx += 1;
-        skipped.push(element.clone());
-    }
-
-    None
-}
-
 fn init_root<E, P, F, X>(elements: &[E], init_with: &mut F) -> Result<SubsetMap<E, P>, X>
 where
     E: Clone,
@@ -594,11 +554,49 @@ where
     Ok(())
 }
 
-impl<E, P> Default for SubsetMap<E, P> {
-    fn default() -> Self {
-        SubsetMap {
-            nodes: Default::default(),
+fn lookup<'a, 'b, E, P>(subset: &'b [E], nodes: &'a [SubsetMapNode<E, P>]) -> Option<&'a P>
+where
+    E: Eq,
+{
+    let mut nodes = nodes;
+    let mut result = None;
+    for element in subset {
+        if let Some(node) = nodes.iter().find(|n| n.element == *element) {
+            result = node.payload.as_ref();
+            nodes = &node.nodes;
+        } else {
+            return None;
         }
+    }
+
+    result
+}
+
+fn find<'a, 'b, E, P>(subset: &'b [E], nodes: &'a [SubsetMapNode<E, P>]) -> MatchResult<'a, E, P>
+where
+    E: Eq + Clone,
+{
+    let mut excluded = Vec::new();
+    let mut nodes = nodes;
+    let mut result_node = None;
+
+    for element in subset {
+        if let Some(node) = nodes.iter().find(|n| n.element == *element) {
+            result_node = Some(node);
+            nodes = &node.nodes;
+        } else {
+            excluded.push(element.clone())
+        }
+    }
+
+    if let Some(result_node) = result_node {
+        if excluded.is_empty() {
+            MatchResult::Perfect(result_node.payload.as_ref())
+        } else {
+            MatchResult::Excluded(result_node.payload.as_ref(), excluded)
+        }
+    } else {
+        MatchResult::NoMatch
     }
 }
 
