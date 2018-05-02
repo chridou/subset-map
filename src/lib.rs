@@ -22,17 +22,17 @@
 //! // Initialize the map where the payloads are basically the keys
 //! let subset_map = SubsetMap::fill(&[1, 2, 3], |x| x.iter().cloned().collect::<Vec<_>>());
 //!
-//! assert_eq!(subset_map.lookup(&[1]), Some(&vec![1]));
-//! assert_eq!(subset_map.lookup(&[2]), Some(&vec![2]));
-//! assert_eq!(subset_map.lookup(&[3]), Some(&vec![3]));
-//! assert_eq!(subset_map.lookup(&[1, 2]), Some(&vec![1, 2]));
-//! assert_eq!(subset_map.lookup(&[2, 3]), Some(&vec![2, 3]));
-//! assert_eq!(subset_map.lookup(&[1, 3]), Some(&vec![1, 3]));
-//! assert_eq!(subset_map.lookup(&[1, 2, 3]), Some(&vec![1, 2, 3]));
+//! assert_eq!(subset_map.get(&[1]), Some(&vec![1]));
+//! assert_eq!(subset_map.get(&[2]), Some(&vec![2]));
+//! assert_eq!(subset_map.get(&[3]), Some(&vec![3]));
+//! assert_eq!(subset_map.get(&[1, 2]), Some(&vec![1, 2]));
+//! assert_eq!(subset_map.get(&[2, 3]), Some(&vec![2, 3]));
+//! assert_eq!(subset_map.get(&[1, 3]), Some(&vec![1, 3]));
+//! assert_eq!(subset_map.get(&[1, 2, 3]), Some(&vec![1, 2, 3]));
 //!
 //! // No internal ordering is performed:
 //! // The position in the original set is crucial:
-//! assert_eq!(subset_map.lookup(&[2,1]), None);
+//! assert_eq!(subset_map.get(&[2,1]), None);
 //! ```
 //!
 //! ## Features
@@ -41,14 +41,16 @@
 //!
 //! Recent Changes
 //!
+//! * 0.3.0
+//!     * [BREAKING CHANGES]: Changed API to be more consistent
 //! * 0.2.2
 //!     * fixed `size` function
 //! * 0.2.1
 //!     * Optimized `find` and `lookup` a bit
 //!     * Added `size` finction to return the number of combinations
 //! * 0.2.0
-//!     * Renamed MatchQuality to `MatchResult`
-//!     * `MatchResult` also contains the no match case
+//!     * Renamed MatchQuality to `LookupResult`
+//!     * `LookupResult` also contains the no match case
 //!     * improved documentation
 //!
 //! ## License
@@ -98,13 +100,13 @@ where
     ///     }
     /// });
     ///
-    /// assert_eq!(subset_map.lookup(&[1]), None);
-    /// assert_eq!(subset_map.lookup(&[2]), Some(&2));
-    /// assert_eq!(subset_map.lookup(&[1, 2]), Some(&3));
-    /// assert_eq!(subset_map.lookup(&[]), None);
-    /// assert_eq!(subset_map.lookup(&[2, 1]), None);
-    /// assert_eq!(subset_map.lookup(&[0]), None);
-    /// assert_eq!(subset_map.lookup(&[0, 1]), None);
+    /// assert_eq!(subset_map.get(&[1]), None);
+    /// assert_eq!(subset_map.get(&[2]), Some(&2));
+    /// assert_eq!(subset_map.get(&[1, 2]), Some(&3));
+    /// assert_eq!(subset_map.get(&[]), None);
+    /// assert_eq!(subset_map.get(&[2, 1]), None);
+    /// assert_eq!(subset_map.get(&[0]), None);
+    /// assert_eq!(subset_map.get(&[0, 1]), None);
     /// ```
     pub fn new<F>(elements: &[E], mut init: F) -> SubsetMap<E, P>
     where
@@ -125,13 +127,13 @@ where
     /// use subset_map::*;
     ///
     /// let subset_map = SubsetMap::fill(&[1, 2], |x| x.iter().sum::<i32>());
-    /// assert_eq!(subset_map.lookup(&[1]), Some(&1));
-    /// assert_eq!(subset_map.lookup(&[2]), Some(&2));
-    /// assert_eq!(subset_map.lookup(&[1, 2]), Some(&3));
-    /// assert_eq!(subset_map.lookup(&[]), None);
-    /// assert_eq!(subset_map.lookup(&[2, 1]), None);
-    /// assert_eq!(subset_map.lookup(&[0]), None);
-    /// assert_eq!(subset_map.lookup(&[0, 1]), None);
+    /// assert_eq!(subset_map.get(&[1]), Some(&1));
+    /// assert_eq!(subset_map.get(&[2]), Some(&2));
+    /// assert_eq!(subset_map.get(&[1, 2]), Some(&3));
+    /// assert_eq!(subset_map.get(&[]), None);
+    /// assert_eq!(subset_map.get(&[2, 1]), None);
+    /// assert_eq!(subset_map.get(&[0]), None);
+    /// assert_eq!(subset_map.get(&[0, 1]), None);
     /// ```
     pub fn fill<F>(elements: &[E], mut init: F) -> SubsetMap<E, P>
     where
@@ -214,13 +216,13 @@ where
     /// use subset_map::*;
     ///
     /// let subset_map = SubsetMap::with_value(&[1, 2], || 42);
-    /// assert_eq!(subset_map.lookup(&[1]), Some(&42));
-    /// assert_eq!(subset_map.lookup(&[2]), Some(&42));
-    /// assert_eq!(subset_map.lookup(&[1, 2]), Some(&42));
-    /// assert_eq!(subset_map.lookup(&[]), None);
-    /// assert_eq!(subset_map.lookup(&[2, 1]), None);
-    /// assert_eq!(subset_map.lookup(&[0]), None);
-    /// assert_eq!(subset_map.lookup(&[0, 1]), None);
+    /// assert_eq!(subset_map.get(&[1]), Some(&42));
+    /// assert_eq!(subset_map.get(&[2]), Some(&42));
+    /// assert_eq!(subset_map.get(&[1, 2]), Some(&42));
+    /// assert_eq!(subset_map.get(&[]), None);
+    /// assert_eq!(subset_map.get(&[2, 1]), None);
+    /// assert_eq!(subset_map.get(&[0]), None);
+    /// assert_eq!(subset_map.get(&[0, 1]), None);
     /// ```
     pub fn with_value<F>(elements: &[E], mut init: F) -> SubsetMap<E, P>
     where
@@ -240,13 +242,13 @@ where
     /// use subset_map::*;
     ///
     /// let subset_map = SubsetMap::with_default(&[1, 2]);
-    /// assert_eq!(subset_map.lookup(&[1]), Some(&0));
-    /// assert_eq!(subset_map.lookup(&[2]), Some(&0));
-    /// assert_eq!(subset_map.lookup(&[1, 2]), Some(&0));
-    /// assert_eq!(subset_map.lookup(&[]), None);
-    /// assert_eq!(subset_map.lookup(&[2, 1]), None);
-    /// assert_eq!(subset_map.lookup(&[0]), None);
-    /// assert_eq!(subset_map.lookup(&[0, 1]), None);
+    /// assert_eq!(subset_map.get(&[1]), Some(&0));
+    /// assert_eq!(subset_map.get(&[2]), Some(&0));
+    /// assert_eq!(subset_map.get(&[1, 2]), Some(&0));
+    /// assert_eq!(subset_map.get(&[]), None);
+    /// assert_eq!(subset_map.get(&[2, 1]), None);
+    /// assert_eq!(subset_map.get(&[0]), None);
+    /// assert_eq!(subset_map.get(&[0, 1]), None);
     /// ```
     pub fn with_default(elements: &[E]) -> SubsetMap<E, P>
     where
@@ -255,11 +257,11 @@ where
         init_root::<_, _, _, ()>(elements, &mut |_| Ok(Some(P::default()))).unwrap()
     }
 
-    /// Looks up a payload by the given subset.
+    /// Gets a payload by the given subset.
     ///
     /// Only "perfect" matches on `subset` are returned.
     ///
-    /// The function returns `None` regardless of wether
+    /// The function returns `None` regardless of whether
     /// `subset` was part of the map or there was no payload
     /// assigned to the given subset.
     ///
@@ -274,26 +276,26 @@ where
     ///         Some(payload)
     ///     }
     /// });
-    /// assert_eq!(subset_map.lookup(&[1]), None);
-    /// assert_eq!(subset_map.lookup(&[2]), None);
-    /// assert_eq!(subset_map.lookup(&[3]), None);
-    /// assert_eq!(subset_map.lookup(&[1, 2]), Some(&vec![1, 2]));
-    /// assert_eq!(subset_map.lookup(&[2, 3]), Some(&vec![2, 3]));
-    /// assert_eq!(subset_map.lookup(&[1, 3]), Some(&vec![1, 3]));
-    /// assert_eq!(subset_map.lookup(&[1, 2, 3]), Some(&vec![1, 2, 3]));
+    /// assert_eq!(subset_map.get(&[1]), None);
+    /// assert_eq!(subset_map.get(&[2]), None);
+    /// assert_eq!(subset_map.get(&[3]), None);
+    /// assert_eq!(subset_map.get(&[1, 2]), Some(&vec![1, 2]));
+    /// assert_eq!(subset_map.get(&[2, 3]), Some(&vec![2, 3]));
+    /// assert_eq!(subset_map.get(&[1, 3]), Some(&vec![1, 3]));
+    /// assert_eq!(subset_map.get(&[1, 2, 3]), Some(&vec![1, 2, 3]));
     ///
-    /// assert_eq!(subset_map.lookup(&[]), None);
-    /// assert_eq!(subset_map.lookup(&[7]), None);
-    /// assert_eq!(subset_map.lookup(&[3, 2, 1]), None);
-    /// assert_eq!(subset_map.lookup(&[1, 3, 2]), None);
-    /// assert_eq!(subset_map.lookup(&[3, 2, 1]), None);
-    /// assert_eq!(subset_map.lookup(&[2, 1]), None);
+    /// assert_eq!(subset_map.get(&[]), None);
+    /// assert_eq!(subset_map.get(&[7]), None);
+    /// assert_eq!(subset_map.get(&[3, 2, 1]), None);
+    /// assert_eq!(subset_map.get(&[1, 3, 2]), None);
+    /// assert_eq!(subset_map.get(&[3, 2, 1]), None);
+    /// assert_eq!(subset_map.get(&[2, 1]), None);
     /// ```
-    pub fn lookup<'a>(&'a self, subset: &'a [E]) -> Option<&'a P>
+    pub fn get<'a>(&'a self, subset: &'a [E]) -> Option<&'a P>
     where
         E: Eq,
     {
-        lookup(subset, &self.nodes)
+        get(subset, &self.nodes)
     }
 
     /// Looks up a payload by the given subset and returns the
@@ -303,13 +305,81 @@ where
     /// `subset` was part of the map or there was no payload
     /// assigned to the given subset.
     ///
-    /// Only perfect matches on `subset` are returned. See `lookup`.
-    pub fn lookup_owned(&self, subset: &[E]) -> Option<P::Owned>
+    /// Only perfect matches on `subset` are returned. See `get`.
+    pub fn get_owned(&self, subset: &[E]) -> Option<P::Owned>
     where
         E: Eq,
         P: ToOwned,
     {
-        lookup(subset, &self.nodes).map(|p| p.to_owned())
+        get(subset, &self.nodes).map(|p| p.to_owned())
+    }
+
+    /// Looks up a subset and maybe returns the assigned payload.
+    ///
+    /// Elements in `subset` that are not part of the initial set are
+    /// skipped.
+    ///
+    /// The returned `LookupResult` may still contain an optional
+    /// payload. None indicates that the subset was matched but
+    /// there was no payload for the given subset.
+    ///
+    /// Use this method if you are interested whether there was
+    /// a matching subset and then process the maybe present payload.
+    /// Otherwise use `find` or `lookup`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use subset_map::*;
+    ///
+    /// let subset_map = SubsetMap::new(&[1u32, 2, 3], |x| {
+    ///     if x == &[2] {
+    ///         None
+    ///     } else {
+    ///         let payload = x.iter().cloned().collect::<Vec<_>>();
+    ///         Some(payload)
+    ///     }
+    /// });
+    ///
+    /// let empty: &[u32] = &[];
+    ///
+    /// // A perfect match with a payload:
+    /// let match_result = subset_map.lookup(&[1]);
+    /// assert_eq!(match_result.payload(), Some(&vec![1]));
+    /// assert_eq!(match_result.excluded_elements(), empty);
+    /// assert_eq!(match_result.is_match(), true);
+    /// assert_eq!(match_result.is_perfect(), true);
+    /// assert_eq!(match_result.is_excluded(), false);
+    ///
+    /// // A perfect match that has no payload:
+    /// let match_result = subset_map.lookup(&[2]);
+    /// assert_eq!(match_result.payload(), None);
+    /// assert_eq!(match_result.excluded_elements(), empty);
+    /// assert_eq!(match_result.is_match(), true);
+    /// assert_eq!(match_result.is_perfect(), true);
+    /// assert_eq!(match_result.is_excluded(), false);
+    ///
+    /// // There is no answer at all:
+    /// let match_result = subset_map.lookup(&[42]);
+    /// assert_eq!(match_result.is_no_match(), true);
+    /// assert_eq!(match_result.is_perfect(), false);
+    /// assert_eq!(match_result.is_excluded(), false);
+    /// assert_eq!(match_result.excluded_elements(), empty);
+    ///
+    /// // A nearby match but that has a payload:
+    /// let match_result = subset_map.lookup(&[3,1]);
+    /// assert_eq!(match_result.payload(), Some(&vec![3]));
+    /// assert_eq!(match_result.excluded_elements(), &[1]);
+    /// assert_eq!(match_result.is_perfect(), false);
+    /// assert_eq!(match_result.is_excluded(), true);
+    /// assert_eq!(match_result.is_match(), true);
+    ///
+    /// ```
+    pub fn lookup<'a>(&'a self, subset: &'a [E]) -> LookupResult<'a, E, P>
+    where
+        E: Eq,
+    {
+        lookup(subset, &self.nodes)
     }
 
     /// Finds a payload by the given subset.
@@ -317,9 +387,12 @@ where
     /// Elements in `subset` that are not part of the initial set are
     /// skipped.
     ///
-    /// If no element of the input set matched `None` is returned.
-    /// The returned `MatchResult` may still contain no value(None)
-    /// if there was no value assigned to the resolved subset.
+    /// If there was no match or no payload for the given subset
+    /// `FindResult::NotFound` is returned.
+    ///
+    /// Use this function if you are mostly interested in
+    /// payloads and how they were matched. Otherwise
+    /// use `lookup` or `get`
     ///
     /// # Example
     ///
@@ -339,41 +412,51 @@ where
     ///
     /// // A perfect match with a payload:
     /// let match_result = subset_map.find(&[1]);
+    ///
     /// assert_eq!(match_result.payload(), Some(&vec![1]));
+    /// assert_eq!(match_result.is_found(), true);
+    /// assert_eq!(match_result.is_found_and_perfect(), true);
+    /// assert_eq!(match_result.is_found_and_excluded(), false);
     /// assert_eq!(match_result.excluded_elements(), empty);
-    /// assert_eq!(match_result.is_match(), true);
-    /// assert_eq!(match_result.is_perfect(), true);
-    /// assert_eq!(match_result.is_excluded(), false);
     ///
     /// // A perfect match that has no payload:
     /// let match_result = subset_map.find(&[2]);
+    ///
     /// assert_eq!(match_result.payload(), None);
+    /// assert_eq!(match_result.is_found(), false);
+    /// assert_eq!(match_result.is_found_and_perfect(), false);
+    /// assert_eq!(match_result.is_found_and_excluded(), false);
     /// assert_eq!(match_result.excluded_elements(), empty);
-    /// assert_eq!(match_result.is_match(), true);
-    /// assert_eq!(match_result.is_perfect(), true);
-    /// assert_eq!(match_result.is_excluded(), false);
     ///
     /// // There is no answer at all:
     /// let match_result = subset_map.find(&[42]);
-    /// assert_eq!(match_result.is_no_match(), true);
-    /// assert_eq!(match_result.is_perfect(), false);
-    /// assert_eq!(match_result.is_excluded(), false);
+    ///
+    /// assert_eq!(match_result.payload(), None);
+    /// assert_eq!(match_result.is_not_found(), true);
+    /// assert_eq!(match_result.is_found_and_perfect(), false);
+    /// assert_eq!(match_result.is_found_and_excluded(), false);
     /// assert_eq!(match_result.excluded_elements(), empty);
     ///
     /// // A nearby match but that has a payload:
     /// let match_result = subset_map.find(&[3,1]);
+    ///
+    /// assert_eq!(match_result.is_found_and_perfect(), false);
+    /// assert_eq!(match_result.is_found_and_excluded(), true);
+    /// assert_eq!(match_result.is_found(), true);
     /// assert_eq!(match_result.payload(), Some(&vec![3]));
     /// assert_eq!(match_result.excluded_elements(), &[1]);
-    /// assert_eq!(match_result.is_perfect(), false);
-    /// assert_eq!(match_result.is_excluded(), true);
-    /// assert_eq!(match_result.is_match(), true);
-    ///
     /// ```
-    pub fn find<'a>(&'a self, subset: &'a [E]) -> MatchResult<'a, E, P>
+    pub fn find<'a>(&'a self, subset: &'a [E]) -> FindResult<'a, E, P>
     where
         E: Eq,
     {
-        find(subset, &self.nodes)
+        match self.lookup(subset) {
+            LookupResult::Perfect(Some(p)) => FindResult::Perfect(p),
+            LookupResult::Perfect(None) => FindResult::NotFound,
+            LookupResult::Excluded(Some(p), e) => FindResult::Excluded(p, e),
+            LookupResult::Excluded(None, _) => FindResult::NotFound,
+            LookupResult::NoMatch => FindResult::NotFound,
+        }
     }
 
     /// Sets the payload of all nodes to `None`
@@ -440,7 +523,7 @@ impl<E, P> SubsetMapNode<E, P> {
 /// nevertheless there was no payload stored for
 /// that subset.
 #[derive(Debug)]
-pub enum MatchResult<'a, E, P: 'a> {
+pub enum LookupResult<'a, E, P: 'a> {
     /// The input set exactly matched a combination
     /// of the original set.
     Perfect(Option<&'a P>),
@@ -449,16 +532,16 @@ pub enum MatchResult<'a, E, P: 'a> {
     ///
     /// The excluded elements are returned.
     Excluded(Option<&'a P>, Vec<E>),
-    /// There was no match at all
+    /// There was no match at all for the given subset
     NoMatch,
 }
 
-impl<'a, E, P> MatchResult<'a, E, P> {
+impl<'a, E, P> LookupResult<'a, E, P> {
     pub fn payload(&self) -> Option<&P> {
         match *self {
-            MatchResult::Perfect(p) => p,
-            MatchResult::Excluded(p, _) => p,
-            MatchResult::NoMatch => None,
+            LookupResult::Perfect(p) => p,
+            LookupResult::Excluded(p, _) => p,
+            LookupResult::NoMatch => None,
         }
     }
 
@@ -469,16 +552,16 @@ impl<'a, E, P> MatchResult<'a, E, P> {
     /// is also empty.
     pub fn excluded_elements(&self) -> &[E] {
         match *self {
-            MatchResult::Perfect(_) => &[],
-            MatchResult::Excluded(_, ref skipped) => &*skipped,
-            MatchResult::NoMatch => &[],
+            LookupResult::Perfect(_) => &[],
+            LookupResult::Excluded(_, ref skipped) => &*skipped,
+            LookupResult::NoMatch => &[],
         }
     }
 
     /// Returns `true` if there was a perfect match
     pub fn is_perfect(&self) -> bool {
         match *self {
-            MatchResult::Perfect(_) => true,
+            LookupResult::Perfect(_) => true,
             _ => false,
         }
     }
@@ -487,7 +570,7 @@ impl<'a, E, P> MatchResult<'a, E, P> {
     /// but some elements had to be excluded
     pub fn is_excluded(&self) -> bool {
         match *self {
-            MatchResult::Excluded(_, _) => true,
+            LookupResult::Excluded(_, _) => true,
             _ => false,
         }
     }
@@ -501,7 +584,90 @@ impl<'a, E, P> MatchResult<'a, E, P> {
     /// though some elements had to be excluded
     pub fn is_match(&self) -> bool {
         match *self {
-            MatchResult::NoMatch => false,
+            LookupResult::NoMatch => false,
+            _ => true,
+        }
+    }
+}
+
+/// The result of `SubsetMap::get`.
+///
+/// It can either be a perfect match on the subset
+/// or a match where some elements of the input set
+/// had to be excluded.
+///
+/// For `FindResult::NotFound` no tracking of
+/// excluded elements is done.
+#[derive(Debug)]
+pub enum FindResult<'a, E, P: 'a> {
+    /// The input set exactly matched a combination
+    /// of the original set and there was a payload.
+    Perfect(&'a P),
+    /// There were some elements in the input set that had
+    /// to be excluded to match a subset of the original set.
+    ///
+    /// Still there was a payload at the given position.
+    ///
+    /// The excluded elements are returned.
+    Excluded(&'a P, Vec<E>),
+    /// There was no match at all or the payload
+    /// for the matched subset was `None`
+    NotFound,
+}
+
+impl<'a, E, P> FindResult<'a, E, P> {
+    pub fn payload(&self) -> Option<&P> {
+        match *self {
+            FindResult::Perfect(p) => Some(p),
+            FindResult::Excluded(p, _) => Some(p),
+            FindResult::NotFound => None,
+        }
+    }
+
+    /// Returns the excluded elements if there was
+    /// a match at all.
+    ///
+    /// If there was no match the returned slice
+    /// is also empty.
+    pub fn excluded_elements(&self) -> &[E] {
+        match *self {
+            FindResult::Perfect(_) => &[],
+            FindResult::Excluded(_, ref skipped) => &*skipped,
+            FindResult::NotFound => &[],
+        }
+    }
+
+    /// Returns `true` if there was a perfect match
+    pub fn is_found_and_perfect(&self) -> bool {
+        match *self {
+            FindResult::Perfect(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Returns `true` if there was a match
+    /// but some elements had to be excluded
+    pub fn is_found_and_excluded(&self) -> bool {
+        match *self {
+            FindResult::Excluded(_, _) => true,
+            _ => false,
+        }
+    }
+
+    /// Returns `true` if there was no match
+    /// or if the payload for the matched subset was
+    /// `None`
+    pub fn is_not_found(&self) -> bool {
+        !self.is_found()
+    }
+
+    /// Returns `true` if there was a match even
+    /// though some elements had to be excluded
+    /// and if there was a payload for the matched
+    /// subset.
+    pub fn is_found(&self) -> bool {
+        match *self {
+            FindResult::NotFound => false,
             _ => true,
         }
     }
@@ -556,7 +722,7 @@ where
     Ok(())
 }
 
-fn lookup<'a, 'b, E, P>(subset: &'b [E], nodes: &'a [SubsetMapNode<E, P>]) -> Option<&'a P>
+fn get<'a, 'b, E, P>(subset: &'b [E], nodes: &'a [SubsetMapNode<E, P>]) -> Option<&'a P>
 where
     E: Eq,
 {
@@ -574,7 +740,7 @@ where
     result
 }
 
-fn find<'a, 'b, E, P>(subset: &'b [E], nodes: &'a [SubsetMapNode<E, P>]) -> MatchResult<'a, E, P>
+fn lookup<'a, 'b, E, P>(subset: &'b [E], nodes: &'a [SubsetMapNode<E, P>]) -> LookupResult<'a, E, P>
 where
     E: Eq + Clone,
 {
@@ -593,12 +759,12 @@ where
 
     if let Some(result_node) = result_node {
         if excluded.is_empty() {
-            MatchResult::Perfect(result_node.payload.as_ref())
+            LookupResult::Perfect(result_node.payload.as_ref())
         } else {
-            MatchResult::Excluded(result_node.payload.as_ref(), excluded)
+            LookupResult::Excluded(result_node.payload.as_ref(), excluded)
         }
     } else {
-        MatchResult::NoMatch
+        LookupResult::NoMatch
     }
 }
 
@@ -616,56 +782,56 @@ mod tests {
     fn one_element() {
         let sample = SubsetMap::fill(&[1], |_| 1);
 
-        assert_eq!(sample.lookup(&[1]), Some(&1));
-        assert_eq!(sample.lookup(&[]), None);
-        assert_eq!(sample.lookup(&[2]), None);
+        assert_eq!(sample.get(&[1]), Some(&1));
+        assert_eq!(sample.get(&[]), None);
+        assert_eq!(sample.get(&[2]), None);
     }
 
     #[test]
     fn two_elements() {
         let sample = SubsetMap::fill(&[1, 2], |x| x.iter().sum::<i32>());
 
-        assert_eq!(sample.lookup(&[1]), Some(&1));
-        assert_eq!(sample.lookup(&[2]), Some(&2));
-        assert_eq!(sample.lookup(&[1, 2]), Some(&3));
-        assert_eq!(sample.lookup(&[]), None);
-        assert_eq!(sample.lookup(&[2, 1]), None);
-        assert_eq!(sample.lookup(&[0]), None);
-        assert_eq!(sample.lookup(&[0, 1]), None);
+        assert_eq!(sample.get(&[1]), Some(&1));
+        assert_eq!(sample.get(&[2]), Some(&2));
+        assert_eq!(sample.get(&[1, 2]), Some(&3));
+        assert_eq!(sample.get(&[]), None);
+        assert_eq!(sample.get(&[2, 1]), None);
+        assert_eq!(sample.get(&[0]), None);
+        assert_eq!(sample.get(&[0, 1]), None);
     }
 
     #[test]
     fn three_elements() {
         let sample = SubsetMap::fill(&[1, 2, 3], |x| x.iter().sum::<i32>());
 
-        assert_eq!(sample.lookup(&[1]), Some(&1));
-        assert_eq!(sample.lookup(&[2]), Some(&2));
-        assert_eq!(sample.lookup(&[3]), Some(&3));
-        assert_eq!(sample.lookup(&[1, 2]), Some(&3));
-        assert_eq!(sample.lookup(&[2, 3]), Some(&5));
-        assert_eq!(sample.lookup(&[1, 3]), Some(&4));
-        assert_eq!(sample.lookup(&[1, 2, 3]), Some(&6));
-        assert_eq!(sample.lookup(&[]), None);
-        assert_eq!(sample.lookup(&[2, 1]), None);
-        assert_eq!(sample.lookup(&[0]), None);
-        assert_eq!(sample.lookup(&[0, 1]), None);
+        assert_eq!(sample.get(&[1]), Some(&1));
+        assert_eq!(sample.get(&[2]), Some(&2));
+        assert_eq!(sample.get(&[3]), Some(&3));
+        assert_eq!(sample.get(&[1, 2]), Some(&3));
+        assert_eq!(sample.get(&[2, 3]), Some(&5));
+        assert_eq!(sample.get(&[1, 3]), Some(&4));
+        assert_eq!(sample.get(&[1, 2, 3]), Some(&6));
+        assert_eq!(sample.get(&[]), None);
+        assert_eq!(sample.get(&[2, 1]), None);
+        assert_eq!(sample.get(&[0]), None);
+        assert_eq!(sample.get(&[0, 1]), None);
     }
 
     #[test]
     fn three_elements_identity_vec() {
         let sample = SubsetMap::fill(&[1, 2, 3], |x| x.iter().cloned().collect::<Vec<_>>());
 
-        assert_eq!(sample.lookup(&[1]), Some(&vec![1]));
-        assert_eq!(sample.lookup(&[2]), Some(&vec![2]));
-        assert_eq!(sample.lookup(&[3]), Some(&vec![3]));
-        assert_eq!(sample.lookup(&[1, 2]), Some(&vec![1, 2]));
-        assert_eq!(sample.lookup(&[2, 3]), Some(&vec![2, 3]));
-        assert_eq!(sample.lookup(&[1, 3]), Some(&vec![1, 3]));
-        assert_eq!(sample.lookup(&[1, 2, 3]), Some(&vec![1, 2, 3]));
+        assert_eq!(sample.get(&[1]), Some(&vec![1]));
+        assert_eq!(sample.get(&[2]), Some(&vec![2]));
+        assert_eq!(sample.get(&[3]), Some(&vec![3]));
+        assert_eq!(sample.get(&[1, 2]), Some(&vec![1, 2]));
+        assert_eq!(sample.get(&[2, 3]), Some(&vec![2, 3]));
+        assert_eq!(sample.get(&[1, 3]), Some(&vec![1, 3]));
+        assert_eq!(sample.get(&[1, 2, 3]), Some(&vec![1, 2, 3]));
     }
 
     #[test]
-    fn test_match_result() {
+    fn test_lookup_result() {
         let subset_map = SubsetMap::new(&[1u32, 2, 3, 4], |x| {
             if x == &[2, 3] {
                 None
@@ -677,62 +843,62 @@ mod tests {
 
         let empty: &[u32] = &[];
 
-        let match_result = subset_map.find(&[]);
+        let match_result = subset_map.lookup(&[]);
         assert_eq!(match_result.payload(), None);
         assert_eq!(match_result.excluded_elements(), empty);
         assert_eq!(match_result.is_match(), false);
         assert_eq!(match_result.is_perfect(), false);
         assert_eq!(match_result.is_excluded(), false);
 
-        let match_result = subset_map.find(&[1]);
+        let match_result = subset_map.lookup(&[1]);
         assert_eq!(match_result.payload(), Some(&vec![1]));
         assert_eq!(match_result.excluded_elements(), empty);
         assert_eq!(match_result.is_match(), true);
         assert_eq!(match_result.is_perfect(), true);
         assert_eq!(match_result.is_excluded(), false);
 
-        let match_result = subset_map.find(&[2, 3]);
+        let match_result = subset_map.lookup(&[2, 3]);
         assert_eq!(match_result.payload(), None);
         assert_eq!(match_result.excluded_elements(), empty);
         assert_eq!(match_result.is_match(), true);
         assert_eq!(match_result.is_perfect(), true);
         assert_eq!(match_result.is_excluded(), false);
 
-        let match_result = subset_map.find(&[42]);
+        let match_result = subset_map.lookup(&[42]);
         assert_eq!(match_result.is_no_match(), true);
         assert_eq!(match_result.is_perfect(), false);
         assert_eq!(match_result.is_excluded(), false);
         assert_eq!(match_result.excluded_elements(), empty);
 
-        let match_result = subset_map.find(&[42, 3]);
+        let match_result = subset_map.lookup(&[42, 3]);
         assert_eq!(match_result.payload(), Some(&vec![3]));
         assert_eq!(match_result.excluded_elements(), &[42]);
         assert_eq!(match_result.is_perfect(), false);
         assert_eq!(match_result.is_excluded(), true);
         assert_eq!(match_result.is_match(), true);
 
-        let match_result = subset_map.find(&[3, 1]);
+        let match_result = subset_map.lookup(&[3, 1]);
         assert_eq!(match_result.payload(), Some(&vec![3]));
         assert_eq!(match_result.excluded_elements(), &[1]);
         assert_eq!(match_result.is_perfect(), false);
         assert_eq!(match_result.is_excluded(), true);
         assert_eq!(match_result.is_match(), true);
 
-        let match_result = subset_map.find(&[3, 1, 4, 2]);
+        let match_result = subset_map.lookup(&[3, 1, 4, 2]);
         assert_eq!(match_result.payload(), Some(&vec![3, 4]));
         assert_eq!(match_result.excluded_elements(), &[1, 2]);
         assert_eq!(match_result.is_perfect(), false);
         assert_eq!(match_result.is_excluded(), true);
         assert_eq!(match_result.is_match(), true);
 
-        let match_result = subset_map.find(&[4, 3, 2, 1]);
+        let match_result = subset_map.lookup(&[4, 3, 2, 1]);
         assert_eq!(match_result.payload(), Some(&vec![4]));
         assert_eq!(match_result.excluded_elements(), &[3, 2, 1]);
         assert_eq!(match_result.is_perfect(), false);
         assert_eq!(match_result.is_excluded(), true);
         assert_eq!(match_result.is_match(), true);
 
-        let match_result = subset_map.find(&[99, 2, 1, 77, 78, 3, 4, 2, 1, 2]);
+        let match_result = subset_map.lookup(&[99, 2, 1, 77, 78, 3, 4, 2, 1, 2]);
         assert_eq!(match_result.payload(), Some(&vec![2, 3, 4]));
         assert_eq!(match_result.excluded_elements(), &[99, 1, 77, 78, 2, 1, 2]);
         assert_eq!(match_result.is_perfect(), false);

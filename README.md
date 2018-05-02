@@ -22,17 +22,17 @@ use subset_map::*;
 // Initialize the map where the payloads are basically the keys
 let subset_map = SubsetMap::fill(&[1, 2, 3], |x| x.iter().cloned().collect::<Vec<_>>());
 
-assert_eq!(subset_map.lookup(&[1]), Some(&vec![1]));
-assert_eq!(subset_map.lookup(&[2]), Some(&vec![2]));
-assert_eq!(subset_map.lookup(&[3]), Some(&vec![3]));
-assert_eq!(subset_map.lookup(&[1, 2]), Some(&vec![1, 2]));
-assert_eq!(subset_map.lookup(&[2, 3]), Some(&vec![2, 3]));
-assert_eq!(subset_map.lookup(&[1, 3]), Some(&vec![1, 3]));
-assert_eq!(subset_map.lookup(&[1, 2, 3]), Some(&vec![1, 2, 3]));
+assert_eq!(subset_map.get(&[1]), Some(&vec![1]));
+assert_eq!(subset_map.get(&[2]), Some(&vec![2]));
+assert_eq!(subset_map.get(&[3]), Some(&vec![3]));
+assert_eq!(subset_map.get(&[1, 2]), Some(&vec![1, 2]));
+assert_eq!(subset_map.get(&[2, 3]), Some(&vec![2, 3]));
+assert_eq!(subset_map.get(&[1, 3]), Some(&vec![1, 3]));
+assert_eq!(subset_map.get(&[1, 2, 3]), Some(&vec![1, 2, 3]));
 
 // No internal ordering is performed:
 // The position in the original set is crucial:
-assert_eq!(subset_map.lookup(&[2,1]), None);
+assert_eq!(subset_map.get(&[2,1]), None);
 ```
 
 ## Features
@@ -41,6 +41,8 @@ The `serde` feature allows serialization and deserialization with `serde`.
 
 Recent Changes
 
+* 0.3.0
+    * [BREAKING CHANGES]: Changed API to be more consistent
 * 0.2.2
     * fixed `size` function
 * 0.2.1

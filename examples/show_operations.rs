@@ -43,7 +43,33 @@ fn main() {
 
     let mut n = 0usize;
     for combination in combinations {
-        if let Some(_p) = map.lookup(&combination) {
+        if let Some(_p) = map.get(&combination) {
+            n += 1;
+        }
+    }
+
+    println!(
+        "[GET]: Combinations: {} -> Time: {:?} {}",
+        map.size(),
+        start.elapsed(),
+        n
+    );
+
+    drop(map);
+
+    let mut n = 0usize;
+    let mut combinations = Vec::new();
+    let map = SubsetMap::fill(&elements, |x| {
+        combinations.push(x.to_vec());
+        n += 1;
+        n
+    });
+
+    let start = Instant::now();
+
+    let mut n = 0usize;
+    for combination in combinations {
+        if let LookupResult::Perfect(Some(_p)) = map.lookup(&combination) {
             n += 1;
         }
     }
@@ -69,7 +95,7 @@ fn main() {
 
     let mut n = 0usize;
     for combination in combinations {
-        if let MatchResult::Perfect(Some(_p)) = map.find(&combination) {
+        if let FindResult::Perfect(_) = map.find(&combination) {
             n += 1;
         }
     }
