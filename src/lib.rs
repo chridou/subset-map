@@ -730,7 +730,7 @@ impl<E, P> SubsetMapNode<E, P> {
     }
 }
 
-/// The result of `SubsetMap::find`.
+/// The result of `SubsetMap::lookup`.
 ///
 /// It can either be a perfect match on the subset
 /// or a match where some elements of the input set
@@ -808,7 +808,7 @@ impl<'a, E, P> LookupResult<'a, E, P> {
     }
 }
 
-/// The result of `SubsetMap::get`.
+/// The result of `SubsetMap::find`.
 ///
 /// It can either be a perfect match on the subset
 /// or a match where some elements of the input set
