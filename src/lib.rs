@@ -39,7 +39,7 @@
 //!
 //! The `serde` feature allows serialization and deserialization with `serde`.
 //!
-//! Recent Changes
+//! ## Recent Changes
 //!
 //! * 0.3.2
 //!     * Added more methods to iterate/walk
