@@ -41,6 +41,8 @@ The `serde` feature allows serialization and deserialization with `serde`.
 
 Recent Changes
 
+* 0.3.2
+    * Added more methods to iterate/walk
 * 0.3.1
     * Added methods to work with payloads
 * 0.3.0

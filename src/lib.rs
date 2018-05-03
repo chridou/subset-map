@@ -41,6 +41,8 @@
 //!
 //! Recent Changes
 //!
+//! * 0.3.2
+//!     * Added more methods to iterate/walk
 //! * 0.3.1
 //!     * Added methods to work with payloads
 //! * 0.3.0
@@ -461,7 +463,7 @@ where
         }
     }
 
-    /// Sets the payload of all nodes to `None`
+    /// Sets the payload of all subsets to `None`
     /// where the given payload does not fulfill the `predicate`
     pub fn filter_values<F>(&mut self, mut predicate: F)
     where
@@ -473,28 +475,46 @@ where
     }
 
     /// Executes the given mutable closure `f`
+    /// on the value of each node.
+    pub fn walk_values<F>(&self, mut f: F)
+    where
+        F: FnMut(&P),
+    {
+        self.nodes.iter().for_each(|n| n.walk_values(&mut f))
+    }
+
+    /// Executes the given mutable closure `f`
     /// on the value of each node until the
     /// first closure returns false.
-    pub fn walk_values<F>(&self, mut f: F)
+    pub fn walk_values_until<F>(&self, mut f: F)
     where
         F: FnMut(&P) -> bool,
     {
         for node in &self.nodes {
-            if !node.walk_values(&mut f) {
+            if !node.walk_values_until(&mut f) {
                 return;
             }
         }
     }
 
     /// Executes the given mutable closure `f`
+    /// on the payload of each node
+    pub fn walk_payloads<F>(&self, mut f: F)
+    where
+        F: FnMut(Option<&P>),
+    {
+        self.nodes.iter().for_each(|n| n.walk_payloads(&mut f))
+    }
+
+    /// Executes the given mutable closure `f`
     /// on the payload of each node until the
     /// first closure returns false.
-    pub fn walk_payloads<F>(&self, mut f: F)
+    pub fn walk_payloads_until<F>(&self, mut f: F)
     where
         F: FnMut(Option<&P>) -> bool,
     {
         for node in &self.nodes {
-            if !node.walk_payloads(&mut f) {
+            if !node.walk_payloads_until(&mut f) {
                 return;
             }
         }
@@ -506,7 +526,7 @@ where
     where
         F: FnMut(&P),
     {
-        self.walk_values(|p| {
+        self.walk_values_until(|p| {
             f(p);
             true
         })
@@ -518,7 +538,7 @@ where
     where
         F: FnMut(Option<&P>),
     {
-        self.walk_payloads(|p| {
+        self.walk_payloads_until(|p| {
             f(p);
             true
         })
@@ -533,7 +553,7 @@ where
 
         let mut all_set = true;
 
-        self.walk_payloads(|p| {
+        self.walk_payloads_until(|p| {
             if p.is_none() {
                 all_set = false;
                 false
@@ -545,7 +565,7 @@ where
         all_set
     }
 
-    /// Returns true if there no nodes or all
+    /// Returns true if there are no subsets or all
     /// of these have no payload set.
     ///
     /// # Example
@@ -589,11 +609,11 @@ where
     ///
     /// let mut subset_map = SubsetMap::<u8, u8>::with_default(&[1, 2]);
     ///
+    /// // Set all payloads to `None`
     /// subset_map.filter_values(|p| false);
     ///
     /// assert_eq!(subset_map.no_subset_with_value(), true);
     /// ```
-
     pub fn no_subset_with_value(&self) -> bool {
         if self.is_empty() {
             return true;
@@ -601,7 +621,7 @@ where
 
         let mut no_value_set = true;
 
-        self.walk_payloads(|p| {
+        self.walk_payloads_until(|p| {
             if p.is_some() {
                 no_value_set = false;
                 false
@@ -613,7 +633,7 @@ where
         no_value_set
     }
 
-    /// Returns true if the map is empty and contains no combinations/subsets.
+    /// Returns true if the map is empty and contains no subsets.
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
@@ -654,7 +674,17 @@ impl<E, P> SubsetMapNode<E, P> {
             .for_each(|n| n.filter_values(predicate))
     }
 
-    pub fn walk_values<F>(&self, f: &mut F) -> bool
+    pub fn walk_values<F>(&self, f: &mut F)
+    where
+        F: FnMut(&P),
+    {
+        if let Some(ref payload) = self.payload {
+            f(payload);
+        }
+        self.nodes.iter().for_each(|n| n.walk_values(f))
+    }
+
+    pub fn walk_values_until<F>(&self, f: &mut F) -> bool
     where
         F: FnMut(&P) -> bool,
     {
@@ -666,7 +696,7 @@ impl<E, P> SubsetMapNode<E, P> {
 
         if go_on {
             for node in &self.nodes {
-                if !node.walk_values(f) {
+                if !node.walk_values_until(f) {
                     return false;
                 }
             }
@@ -675,13 +705,21 @@ impl<E, P> SubsetMapNode<E, P> {
         return true;
     }
 
-    pub fn walk_payloads<F>(&self, f: &mut F) -> bool
+    pub fn walk_payloads<F>(&self, f: &mut F)
+    where
+        F: FnMut(Option<&P>),
+    {
+        f(self.payload.as_ref());
+        self.nodes.iter().for_each(|n| n.walk_payloads(f))
+    }
+
+    pub fn walk_payloads_until<F>(&self, f: &mut F) -> bool
     where
         F: FnMut(Option<&P>) -> bool,
     {
         if f(self.payload.as_ref()) {
             for node in &self.nodes {
-                if !node.walk_payloads(f) {
+                if !node.walk_payloads_until(f) {
                     return false;
                 }
             }
