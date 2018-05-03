@@ -41,6 +41,8 @@ The `serde` feature allows serialization and deserialization with `serde`.
 
 Recent Changes
 
+* 0.3.1
+    * Added methods to work with payloads
 * 0.3.0
     * [BREAKING CHANGES]: Changed API to be more consistent
 * 0.2.2
@@ -49,8 +51,8 @@ Recent Changes
     * Optimized `find` and `lookup` a bit
     * Added `size` finction to return the number of combinations
 * 0.2.0
-    * Renamed MatchQuality to `MatchResult`
-    * `MatchResult` also contains the no match case
+    * Renamed MatchQuality to `LookupResult`
+    * `LookupResult` also contains the no match case
     * improved documentation
 
 ## License

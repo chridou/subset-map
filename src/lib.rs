@@ -41,6 +41,8 @@
 //!
 //! Recent Changes
 //!
+//! * 0.3.1
+//!     * Added methods to work with payloads
 //! * 0.3.0
 //!     * [BREAKING CHANGES]: Changed API to be more consistent
 //! * 0.2.2
@@ -461,13 +463,154 @@ where
 
     /// Sets the payload of all nodes to `None`
     /// where the given payload does not fulfill the `predicate`
-    pub fn filter_payloads<F>(&mut self, mut predicate: F)
+    pub fn filter_values<F>(&mut self, mut predicate: F)
     where
         F: FnMut(&P) -> bool,
     {
         self.nodes
             .iter_mut()
-            .for_each(|n| n.filter_payloads(&mut predicate))
+            .for_each(|n| n.filter_values(&mut predicate))
+    }
+
+    /// Executes the given mutable closure `f`
+    /// on the value of each node until the
+    /// first closure returns false.
+    pub fn walk_values<F>(&self, mut f: F)
+    where
+        F: FnMut(&P) -> bool,
+    {
+        for node in &self.nodes {
+            if !node.walk_values(&mut f) {
+                return;
+            }
+        }
+    }
+
+    /// Executes the given mutable closure `f`
+    /// on the payload of each node until the
+    /// first closure returns false.
+    pub fn walk_payloads<F>(&self, mut f: F)
+    where
+        F: FnMut(Option<&P>) -> bool,
+    {
+        for node in &self.nodes {
+            if !node.walk_payloads(&mut f) {
+                return;
+            }
+        }
+    }
+
+    /// Executes the given mutable closure `f`
+    /// on the payload of each node
+    pub fn for_each_value<F>(&self, mut f: F)
+    where
+        F: FnMut(&P),
+    {
+        self.walk_values(|p| {
+            f(p);
+            true
+        })
+    }
+
+    /// Executes the given mutable closure `f`
+    /// on the payload of each node
+    pub fn for_each_payload<F>(&self, mut f: F)
+    where
+        F: FnMut(Option<&P>),
+    {
+        self.walk_payloads(|p| {
+            f(p);
+            true
+        })
+    }
+
+    /// Returns true if there are nodes and all
+    /// of these have a payload set.
+    pub fn all_subsets_have_values(&self) -> bool {
+        if self.is_empty() {
+            return false;
+        }
+
+        let mut all_set = true;
+
+        self.walk_payloads(|p| {
+            if p.is_none() {
+                all_set = false;
+                false
+            } else {
+                true
+            }
+        });
+
+        all_set
+    }
+
+    /// Returns true if there no nodes or all
+    /// of these have no payload set.
+    ///
+    /// # Example
+    ///
+    /// An empty map has no values:
+    ///
+    /// ```
+    /// use subset_map::*;
+    ///
+    /// let subset_map = SubsetMap::<u8, u8>::with_default(&[]);
+    ///
+    /// assert_eq!(subset_map.no_subset_with_value(), true);
+    /// ```
+    ///
+    /// An map with a set entry has values:
+    ///
+    /// ```
+    /// use subset_map::*;
+    ///
+    /// let subset_map = SubsetMap::<u8, u8>::with_default(&[1]);
+    ///
+    /// assert_eq!(subset_map.no_subset_with_value(), false);
+    /// ```
+    ///
+    /// An non empty map where at least one subset has a value:
+    ///
+    /// ```
+    /// use subset_map::*;
+    ///
+    /// let mut subset_map = SubsetMap::fill(&[1, 2], |c| c.len());
+    ///
+    /// subset_map.filter_values(|p| *p == 2);
+    ///
+    /// assert_eq!(subset_map.no_subset_with_value(), false);
+    /// ```
+    ///
+    /// An non empty map where no subset has a value:
+    ///
+    /// ```
+    /// use subset_map::*;
+    ///
+    /// let mut subset_map = SubsetMap::<u8, u8>::with_default(&[1, 2]);
+    ///
+    /// subset_map.filter_values(|p| false);
+    ///
+    /// assert_eq!(subset_map.no_subset_with_value(), true);
+    /// ```
+
+    pub fn no_subset_with_value(&self) -> bool {
+        if self.is_empty() {
+            return true;
+        }
+
+        let mut no_value_set = true;
+
+        self.walk_payloads(|p| {
+            if p.is_some() {
+                no_value_set = false;
+                false
+            } else {
+                true
+            }
+        });
+
+        no_value_set
     }
 
     /// Returns true if the map is empty and contains no combinations/subsets.
@@ -498,7 +641,7 @@ struct SubsetMapNode<E, P> {
 }
 
 impl<E, P> SubsetMapNode<E, P> {
-    pub fn filter_payloads<F>(&mut self, predicate: &mut F)
+    pub fn filter_values<F>(&mut self, predicate: &mut F)
     where
         F: FnMut(&P) -> bool,
     {
@@ -508,7 +651,44 @@ impl<E, P> SubsetMapNode<E, P> {
         }
         self.nodes
             .iter_mut()
-            .for_each(|n| n.filter_payloads(predicate))
+            .for_each(|n| n.filter_values(predicate))
+    }
+
+    pub fn walk_values<F>(&self, f: &mut F) -> bool
+    where
+        F: FnMut(&P) -> bool,
+    {
+        let go_on = if let Some(ref payload) = self.payload {
+            f(payload)
+        } else {
+            true
+        };
+
+        if go_on {
+            for node in &self.nodes {
+                if !node.walk_values(f) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    pub fn walk_payloads<F>(&self, f: &mut F) -> bool
+    where
+        F: FnMut(Option<&P>) -> bool,
+    {
+        if f(self.payload.as_ref()) {
+            for node in &self.nodes {
+                if !node.walk_payloads(f) {
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
+        }
     }
 }
 
