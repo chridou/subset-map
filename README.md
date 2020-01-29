@@ -41,6 +41,10 @@ The `serde` feature allows serialization and deserialization with `serde`.
 
 Recent Changes
 
+* 0.3.4
+    * added a`walk` method which operates on keys and values
+* 0.3.3
+    * removed some unnecessary lifetimes
 * 0.3.2
     * Added more methods to iterate/walk
 * 0.3.1

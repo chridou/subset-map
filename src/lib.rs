@@ -520,6 +520,14 @@ where
         }
     }
 
+    /// Walk all elements with their payloads
+    pub fn walk<F>(&self, mut f: F)
+    where
+        F: FnMut(&[&E], Option<&P>),
+    {
+        self.nodes.iter().for_each(|n| n.walk(&mut f))
+    }
+
     /// Executes the given mutable closure `f`
     /// on the payload of each node
     pub fn for_each_value<F>(&self, mut f: F)
@@ -684,6 +692,14 @@ impl<E, P> SubsetMapNode<E, P> {
         self.nodes.iter().for_each(|n| n.walk_values(f))
     }
 
+    pub fn walk_payloads<F>(&self, f: &mut F)
+    where
+        F: FnMut(Option<&P>),
+    {
+        f(self.payload.as_ref());
+        self.nodes.iter().for_each(|n| n.walk_payloads(f))
+    }
+
     pub fn walk_values_until<F>(&self, f: &mut F) -> bool
     where
         F: FnMut(&P) -> bool,
@@ -702,15 +718,7 @@ impl<E, P> SubsetMapNode<E, P> {
             }
         }
 
-        return true;
-    }
-
-    pub fn walk_payloads<F>(&self, f: &mut F)
-    where
-        F: FnMut(Option<&P>),
-    {
-        f(self.payload.as_ref());
-        self.nodes.iter().for_each(|n| n.walk_payloads(f))
+        true
     }
 
     pub fn walk_payloads_until<F>(&self, f: &mut F) -> bool
@@ -727,6 +735,24 @@ impl<E, P> SubsetMapNode<E, P> {
         } else {
             false
         }
+    }
+
+    pub fn walk<F>(&self, mut f: F)
+    where
+        F: FnMut(&[&E], Option<&P>),
+    {
+        let mut elements = Vec::new();
+        self.walk_internal(&mut elements, &mut f)
+    }
+
+    fn walk_internal<'a, F>(&'a self, elements: &mut Vec<&'a E>, f: &mut F)
+    where
+        F: FnMut(&[&E], Option<&P>),
+    {
+        elements.push(&self.element);
+        f(elements.as_slice(), self.payload.as_ref());
+        self.nodes.iter().for_each(|n| n.walk_internal(elements, f));
+        elements.pop();
     }
 }
 
@@ -901,7 +927,7 @@ where
 
     for fixed in 0..elements.len() {
         let element = elements[fixed].clone();
-        let payload = init_with(&elements[fixed..fixed + 1])?;
+        let payload = init_with(&elements[fixed..=fixed])?;
         let mut node = SubsetMapNode {
             element,
             payload,
@@ -1037,7 +1063,7 @@ mod tests {
 
     #[test]
     fn three_elements_identity_vec() {
-        let sample = SubsetMap::fill(&[1, 2, 3], |x| x.iter().cloned().collect::<Vec<_>>());
+        let sample = SubsetMap::fill(&[1, 2, 3], |x| x.to_vec());
 
         assert_eq!(sample.get(&[1]), Some(&vec![1]));
         assert_eq!(sample.get(&[2]), Some(&vec![2]));
@@ -1046,6 +1072,23 @@ mod tests {
         assert_eq!(sample.get(&[2, 3]), Some(&vec![2, 3]));
         assert_eq!(sample.get(&[1, 3]), Some(&vec![1, 3]));
         assert_eq!(sample.get(&[1, 2, 3]), Some(&vec![1, 2, 3]));
+    }
+
+    #[test]
+    fn walk_5_elems_keeps_order() {
+        let elements: Vec<_> = (0..5).collect();
+
+        let mut n = 0;
+        let map = SubsetMap::fill(&elements, |_x| {
+            n += 1;
+            n
+        });
+
+        let mut n = 0;
+        map.walk(|_elements, payload| {
+            n += 1;
+            assert_eq!(payload, Some(&n));
+        })
     }
 
     #[test]
