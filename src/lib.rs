@@ -295,7 +295,7 @@ where
     /// assert_eq!(subset_map.get(&[3, 2, 1]), None);
     /// assert_eq!(subset_map.get(&[2, 1]), None);
     /// ```
-    pub fn get<'a>(&'a self, subset: &'a [E]) -> Option<&'a P>
+    pub fn get<'a>(&'a self, subset: &[E]) -> Option<&'a P>
     where
         E: Eq,
     {
@@ -379,7 +379,7 @@ where
     /// assert_eq!(match_result.is_match(), true);
     ///
     /// ```
-    pub fn lookup<'a>(&'a self, subset: &'a [E]) -> LookupResult<'a, E, P>
+    pub fn lookup<'a>(&'a self, subset: &[E]) -> LookupResult<'a, E, P>
     where
         E: Eq,
     {
@@ -450,7 +450,7 @@ where
     /// assert_eq!(match_result.payload(), Some(&vec![3]));
     /// assert_eq!(match_result.excluded_elements(), &[1]);
     /// ```
-    pub fn find<'a>(&'a self, subset: &'a [E]) -> FindResult<'a, E, P>
+    pub fn find<'a>(&'a self, subset: &[E]) -> FindResult<'a, E, P>
     where
         E: Eq,
     {
